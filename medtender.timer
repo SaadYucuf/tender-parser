@@ -1,0 +1,10 @@
+[Unit]
+Description=Run MedTender AI Agent daily at 08:00 Asia/Tashkent
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+Unit=medtender.service
+
+[Install]
+WantedBy=timers.target
