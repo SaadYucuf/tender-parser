@@ -12,6 +12,7 @@ from app.models.schemas import TenderRecord
 from app.parsers.keywords import KEYWORDS
 from app.utils.dates import parse_datetime
 from app.utils.http import HttpClient
+from app.utils.relevance import looks_medically_relevant
 
 logger = logging.getLogger(__name__)
 
@@ -254,8 +255,7 @@ class GenericSearchParser(SourceParser):
         return match.group(1).strip(" .;:-") if match else None
 
     def _looks_relevant_text(self, text: str) -> bool:
-        lowered = text.lower()
-        return any(keyword.lower() in lowered for keyword in KEYWORDS)
+        return looks_medically_relevant(text)
 
     def _detect_language(self, text: str) -> str:
         lowered = text.lower()

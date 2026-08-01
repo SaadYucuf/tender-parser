@@ -4,6 +4,8 @@ import re
 from collections.abc import Iterable
 
 from app.models.schemas import Category, TenderRecord
+from app.utils.relevance import NEGATIVE_KEYWORDS as SHARED_NEGATIVE_KEYWORDS
+from app.utils.relevance import STRONG_DEVICE_KEYWORDS as SHARED_STRONG_DEVICE_KEYWORDS
 
 
 CATEGORY_KEYWORDS: dict[Category, list[str]] = {
@@ -83,50 +85,8 @@ CATEGORY_KEYWORDS: dict[Category, list[str]] = {
     Category.PHARMACEUTICALS: ["pharmaceutical", "лекарств", "dori vosita", "фармацевт", "фармпродукция", "farmatsevtika"],
 }
 
-NEGATIVE_KEYWORDS = [
-    "furniture",
-    "office",
-    "канцеляр",
-    "food",
-    "oziq-ovqat",
-    "топливо",
-    "fuel",
-    "konditsioner",
-    "кондиционер",
-    "quyosh",
-    "электр станц",
-    "qozon",
-    "bank",
-    "qurilish obyekt",
-    "қурилиш объект",
-    "строитель",
-]
-ACTIVE_STATUSES = {"active", "open", "published", "прием предложений", "активный", "qabul qilinmoqda"}
-CLOSED_STATUSES = {"closed", "cancelled", "canceled", "completed", "awarded", "archive", "bekor", "закрыт", "отменен", "отменён"}
-STRONG_DEVICE_KEYWORDS = [
-    "magnit-rezonans tomografiya",
-    "магнитно-резонансный томограф",
-    "mri scanner",
-    "mrt",
-    "мрт",
-    "kompyuter tomografiyasi",
-    "компьютерный томограф",
-    "ct scanner",
-    "angiograf",
-    "ангиограф",
-    "pcr qurilmasi",
-    "пцр аппарат",
-    "real-time pcr",
-    "hplc",
-    "вэжх",
-    "gemodializ apparati",
-    "аппарат для гемодиализа",
-    "dialysis machine",
-    "defibrillator",
-    "дефибриллятор",
-    "ventilator",
-    "аппарат ивл",
-]
+NEGATIVE_KEYWORDS = SHARED_NEGATIVE_KEYWORDS
+STRONG_DEVICE_KEYWORDS = list(dict.fromkeys(SHARED_STRONG_DEVICE_KEYWORDS))
 
 
 class TenderClassifier:
@@ -143,14 +103,6 @@ class TenderClassifier:
         )
         record.delivery_requirements = record.delivery_requirements or self._flag(text, ["delivery", "installation", "commissioning", "yetkazib", "монтаж"])
         return record
-
-    def is_active_status(self, status: str | None) -> bool:
-        if not status:
-            return True
-        normalized = status.lower()
-        if any(value in normalized for value in CLOSED_STATUSES):
-            return False
-        return any(value in normalized for value in ACTIVE_STATUSES) or True
 
     def _score(self, text: str) -> tuple[Category, int]:
         negative_hits = self._count_hits(text, NEGATIVE_KEYWORDS)
@@ -183,7 +135,6 @@ class TenderClassifier:
         parts: Iterable[str | None] = [
             record.title,
             record.lot_name,
-            record.customer,
             record.description,
             record.status,
             record.raw_text,

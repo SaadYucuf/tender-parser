@@ -47,3 +47,30 @@ def test_medical_installation_context_is_relevant():
 
     assert classified.category == Category.DIAGNOSTIC_EQUIPMENT
     assert classified.relevance_score >= 70
+
+
+def test_hospital_customer_buying_unrelated_goods_is_not_relevant():
+    record = TenderRecord(
+        source="test",
+        title="Ofis mebeli va kantselyariya buyumlarini yetkazib berish",
+        customer="Farg'ona viloyat tibbiyot markazi",
+        source_url="https://example.com/tender/5",
+    )
+
+    classified = TenderClassifier().classify(record)
+
+    assert classified.category == Category.NOT_RELEVANT
+    assert classified.relevance_score < 70
+
+
+def test_generic_process_terms_alone_are_not_relevant():
+    record = TenderRecord(
+        source="test",
+        title="Konditsionerlarni yetkazib berish, kafolat xizmati va tender ta'minoti talab qilinadi",
+        source_url="https://example.com/tender/6",
+    )
+
+    classified = TenderClassifier().classify(record)
+
+    assert classified.category == Category.NOT_RELEVANT
+    assert classified.relevance_score < 70

@@ -1,5 +1,6 @@
 from app.parsers.etender_uzex import EtenderUzexParser
 from app.services.telegram import format_daily_report
+from app.utils.relevance import looks_medically_relevant
 
 
 def test_generic_parser_extracts_tender_from_html_block():
@@ -43,6 +44,26 @@ def test_etender_api_item_to_record():
     assert record.tender_number == "26120012502640"
     assert str(record.source_url) == "https://etender.uzex.uz/lot/502640"
     assert record.deadline is not None
+
+
+def test_relevance_filter_rejects_generic_process_terms_only():
+    text = "Konditsionerlar yetkazib berish. Kafolat xizmati va tender ta'minoti talab qilinadi."
+    assert looks_medically_relevant(text) is False
+
+
+def test_relevance_filter_rejects_hospital_furniture_purchase():
+    text = "Farg'ona viloyat tibbiyot markazi uchun ofis mebeli va kantselyariya buyumlari xaridi"
+    assert looks_medically_relevant(text) is False
+
+
+def test_relevance_filter_accepts_specific_device_name():
+    text = "1.5 Tesla MRI tizimini yetkazib berish, o'rnatish va ishga tushirish"
+    assert looks_medically_relevant(text) is True
+
+
+def test_relevance_filter_accepts_two_weak_medical_terms_together():
+    text = "Shifoxona jihozlari va laboratoriya uskunalari yetkazib berish tenderi"
+    assert looks_medically_relevant(text) is True
 
 
 def test_daily_report_includes_source_links():

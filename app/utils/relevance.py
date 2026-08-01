@@ -1,0 +1,226 @@
+"""Shared medtech relevance matching for parser filtering and scoring.
+
+One broad/process keyword must not mark a tender as medically relevant on its
+own. A text is relevant only when it contains a specific device keyword, or at
+least two broader medical phrases, and negative terms do not dominate.
+"""
+
+from __future__ import annotations
+
+import re
+
+STRONG_DEVICE_KEYWORDS: list[str] = [
+    "mri",
+    "mrt",
+    "мрт",
+    "mri scanner",
+    "magnit-rezonans tomografiya",
+    "магнитно-резонансный томограф",
+    "ct scanner",
+    "kompyuter tomografiyasi",
+    "компьютерный томограф",
+    "кт",
+    "angiograf",
+    "ангиограф",
+    "angiography system",
+    "pcr qurilmasi",
+    "пцр аппарат",
+    "real-time pcr",
+    "hplc",
+    "вэжх",
+    "gemodializ apparati",
+    "аппарат для гемодиализа",
+    "dialysis machine",
+    "defibrillator",
+    "дефибриллятор",
+    "ventilator",
+    "аппарат ивл",
+    "sun'iy nafas apparati",
+    "narkoz apparati",
+    "наркозный аппарат",
+    "anesthesia machine",
+    "endoskop",
+    "эндоскоп",
+    "endoscope",
+    "laparoskop tizimi",
+    "лапароскопическая стойка",
+    "laparoscopy tower",
+    "rentgen apparati",
+    "рентген аппарат",
+    "x-ray machine",
+    "mammograf",
+    "маммограф",
+    "mammography unit",
+    "uzi apparati",
+    "узи аппарат",
+    "ultrasound machine",
+    "elektrokardiograf",
+    "электрокардиограф",
+    "ecg machine",
+    "eeg apparati",
+    "ээг аппарат",
+    "eeg device",
+    "emg apparati",
+    "эмг аппарат",
+    "emg device",
+    "avtoklav",
+    "автоклав",
+    "autoclave",
+    "sterilizator",
+    "sterilizer",
+    "kislorod kontsentratori",
+    "кислородный концентратор",
+    "oxygen concentrator",
+    "bemor monitori",
+    "монитор пациента",
+    "patient monitor",
+    "infuzion nasos",
+    "инфузионный насос",
+    "infusion pump",
+    "shprits nasosi",
+    "шприцевой насос",
+    "syringe pump",
+    "biokimyo analizatori",
+    "биохимический анализатор",
+    "biochemistry analyzer",
+    "gematologik analizator",
+    "гематологический анализатор",
+    "hematology analyzer",
+    "immunoferment analizatori",
+    "ифа анализатор",
+    "elisa analyzer",
+    "sentrifuga",
+    "центрифуга",
+    "centrifuge",
+    "tez yordam avtomobili",
+    "автомобиль скорой помощи",
+    "ambulance",
+    "operatsion stol",
+    "операционный стол",
+    "operating table",
+]
+
+WEAK_MEDICAL_KEYWORDS: list[str] = [
+    "tibbiy texnika",
+    "tibbiy uskunalar",
+    "tibbiy jihozlar",
+    "tibbiy buyumlar",
+    "tibbiy apparat",
+    "laboratoriya uskunalari",
+    "diagnostika uskunalari",
+    "shifoxona jihozlari",
+    "sterilizatsiya uskunalari",
+    "медицинское оборудование",
+    "медицинская техника",
+    "медицинские изделия",
+    "медицинская аппаратура",
+    "лабораторное оборудование",
+    "диагностическое оборудование",
+    "оснащение больниц",
+    "медицинские расходные материалы",
+    "стерилизационное оборудование",
+    "medical equipment",
+    "medical devices",
+    "laboratory equipment",
+    "diagnostic equipment",
+    "hospital equipment",
+    "medical supplies",
+    "medical consumables",
+    "imaging equipment",
+    "tibbiy kateter",
+    "медицинский катетер",
+    "medical catheter",
+    "implant",
+    "имплант",
+    "tibbiy gaz tizimi",
+    "система медицинских газов",
+    "medical gas system",
+    "markazlashtirilgan kislorod ta'minoti",
+    "централизованное кислородоснабжение",
+    "central oxygen supply",
+]
+
+NEGATIVE_KEYWORDS: list[str] = [
+    "furniture",
+    "office",
+    "канцеляр",
+    "food",
+    "oziq-ovqat",
+    "топливо",
+    "fuel",
+    "konditsioner",
+    "кондиционер",
+    "quyosh",
+    "электр станц",
+    "qozon",
+    "bank",
+    "qurilish obyekt",
+    "қурилиш объект",
+    "строитель",
+    "computer",
+    "компьютер",
+    "kompyuter",
+    "noutbuk",
+    "laptop",
+    "printer",
+    "принтер",
+    "server",
+    "сервер",
+    "dasturiy ta'minot",
+    "software",
+    "программное обеспечение",
+    "yengil avtomobil",
+    "легковой автомобиль",
+    "yuk mashinasi",
+    "грузовой автомобиль",
+    "traktor",
+    "трактор",
+    "avtobus",
+    "автобус",
+    "tozalash xizmati",
+    "клининг",
+    "qo'riqlash xizmati",
+    "охранные услуги",
+    "tarjima xizmati",
+    "перевод текста",
+    "sug'urta xizmati",
+    "страхование",
+    "reklama xizmati",
+    "реклама",
+    "forma kiyim",
+    "спецодежда",
+    "bosma mahsulot",
+    "полиграф",
+    "kanselyariya",
+    "qishloq xo'jaligi texnikasi",
+    "сельхозтехника",
+    "yo'l qurilishi",
+    "дорожное строительство",
+    "asfalt",
+    "асфальт",
+]
+
+
+def _pattern_for(keyword: str) -> str:
+    lowered = keyword.lower()
+    if len(lowered) <= 4:
+        return rf"(?<!\w){re.escape(lowered)}(?!\w)"
+    return re.escape(lowered)
+
+
+def count_hits(text: str, keywords: list[str]) -> int:
+    lowered = text.lower()
+    return sum(1 for keyword in keywords if re.search(_pattern_for(keyword), lowered))
+
+
+def has_any(text: str, keywords: list[str]) -> bool:
+    lowered = text.lower()
+    return any(re.search(_pattern_for(keyword), lowered) for keyword in keywords)
+
+
+def looks_medically_relevant(text: str, min_weak_hits: int = 2) -> bool:
+    if has_any(text, NEGATIVE_KEYWORDS):
+        return False
+    if has_any(text, STRONG_DEVICE_KEYWORDS):
+        return True
+    return count_hits(text, WEAK_MEDICAL_KEYWORDS) >= min_weak_hits
