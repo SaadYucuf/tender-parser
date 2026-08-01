@@ -1,0 +1,315 @@
+sources:
+  - id: farma_uzex
+    name: UZFARM / Farma UZEX
+    base_url: https://farma.uzex.uz
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: true
+    check_interval_minutes: 720
+    parser: app.parsers.farma_uzex
+    notes:
+      - Also check UZFARM section in xarid.uzex.uz.
+
+  - id: xarid_uzex
+    name: Xarid UZEX
+    base_url: https://xarid.uzex.uz
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: true
+    check_interval_minutes: 720
+    parser: app.parsers.xarid_uzex
+
+  - id: etender_uzex
+    name: eTender UZEX
+    base_url: https://etender.uzex.uz
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: true
+    check_interval_minutes: 720
+    parser: app.parsers.etender_uzex
+
+  - id: xarid_mf
+    name: Xarid.MF
+    base_url: https://xarid.mf.uz
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: true
+    check_interval_minutes: 720
+    parser: app.parsers.xarid_mf
+    alternate_urls:
+      - https://xarid-mf.imv.uz
+      - https://xarid-mf.imv.uz/login/
+
+  - id: xt_xarid
+    name: XT-Xarid / Hayot Birja
+    base_url: https://xt-xarid.uz
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 720
+    parser: app.parsers.xt_xarid
+    entry_urls:
+      - https://xt-xarid.uz/procedure/tender
+      - https://xt-xarid.uz/procedure/request_proposals
+
+  - id: gov_ssv
+    name: Sog'liqni saqlash vazirligi
+    base_url: https://gov.uz/oz/ssv
+    enabled: true
+    priority: critical
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 720
+    parser: app.parsers.gov_ssv
+    entry_urls:
+      - https://gov.uz/oz/ssv/sections/tenderlar
+      - https://gov.uz/oz/ssv/sections/davlat-xaridlari
+      - https://gov.uz/oz/ssv/news/news
+
+  - id: uzmedimpex
+    name: Xaridlar Markazi / O'zmedimpeks
+    base_url: https://gov.uz/oz/uzmedimpex
+    enabled: true
+    priority: critical
+    source_type: official_medical_buyer
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 720
+    parser: app.parsers.uzmedimpex
+    alternate_urls:
+      - https://uzmedimpex.uz
+    entry_urls:
+      - https://gov.uz/ru/uzmedimpex/news/tenderlar_
+      - https://gov.uz/ru/uzmedimpex/news/eng-yaxshi-takliflarni-tanlab-olish
+      - https://gov.uz/ru/uzmedimpex/news/marketing-tadqiqotlari
+      - https://gov.uz/ru/uzmedimpex/news/zakup
+      - https://gov.uz/ru/uzmedimpex/news/auksion
+
+  - id: ungm
+    name: United Nations Global Marketplace
+    base_url: https://www.ungm.org/Public/Notice
+    enabled: true
+    priority: critical
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 720
+    parser: app.parsers.ungm
+
+  - id: unops
+    name: UNOPS eSourcing
+    base_url: https://esourcing.unops.org
+    enabled: true
+    priority: critical
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: true
+    requires_login: true
+    supports_api: false
+    check_interval_minutes: 720
+    parser: app.parsers.unops
+
+  - id: sanepid
+    name: Sanitariya-epidemiologiya qo'mitasi
+    base_url: https://gov.uz/oz/sanepid
+    enabled: true
+    priority: high
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.gov_portal
+
+  - id: cooperation
+    name: Cooperation.uz
+    base_url: https://cooperation.uz
+    enabled: true
+    priority: high
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+    alternate_urls:
+      - https://stat.cooperation.uz
+
+  - id: adb
+    name: Asian Development Bank
+    base_url: https://www.adb.org/projects/tenders
+    enabled: true
+    priority: high
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: false
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: world_bank
+    name: World Bank Procurement Notices
+    base_url: https://projects.worldbank.org/en/projects-operations/procurement
+    enabled: true
+    priority: high
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: true
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+    alternate_urls:
+      - https://financesone.worldbank.org/procurement-notice/DS00979
+
+  - id: ebrd_ecepp
+    name: EBRD ECEPP
+    base_url: https://ecepp.ebrd.com
+    enabled: true
+    priority: high
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: true
+    requires_login: true
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: uzpharmagency
+    name: Tibbiyot va farmatsevtika agentligi
+    base_url: https://gov.uz/oz/uzpharmagency
+    enabled: true
+    priority: medium
+    source_type: official
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.gov_portal
+
+  - id: shaffof_qurilish
+    name: Shaffof Qurilish
+    base_url: https://tender.mc.uz
+    enabled: true
+    priority: medium
+    source_type: official_infrastructure
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: shaffof_xarid
+    name: Shaffof Xarid
+    base_url: https://shaffofxarid.uz
+    enabled: true
+    priority: medium
+    source_type: official_infrastructure
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+    entry_urls:
+      - https://shaffofxarid.uz/tender/tenders
+
+  - id: isdb
+    name: Islamic Development Bank
+    base_url: https://www.isdb.org/project-procurement/taxonomy/term/92
+    enabled: true
+    priority: medium
+    source_type: international_official
+    country_filter: Uzbekistan
+    requires_javascript: false
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+    alternate_urls:
+      - https://www.isdb.org/project-procurement
+
+  - id: tenderweek
+    name: Tenderweek
+    base_url: https://tenderweek.com
+    enabled: true
+    priority: medium
+    source_type: aggregator
+    requires_official_verification: true
+    requires_javascript: false
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: uztender
+    name: UzTender
+    base_url: https://uztender.com
+    enabled: true
+    priority: medium
+    source_type: aggregator
+    requires_official_verification: true
+    requires_javascript: false
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: developmentaid
+    name: DevelopmentAid
+    base_url: https://www.developmentaid.org/tenders
+    enabled: true
+    priority: medium
+    source_type: aggregator
+    requires_official_verification: true
+    country_filter: Uzbekistan
+    requires_javascript: true
+    requires_login: true
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic
+
+  - id: e_auksion
+    name: E-AUKSION
+    base_url: https://e-auksion.uz
+    enabled: true
+    priority: low
+    source_type: auction
+    country: Uzbekistan
+    requires_javascript: true
+    requires_login: false
+    supports_api: false
+    check_interval_minutes: 1440
+    parser: app.parsers.generic

@@ -8,8 +8,9 @@ from app.config import get_settings
 from app.parsers import build_parsers
 from app.repositories.database import init_db, session_scope
 from app.repositories.tenders import TenderRepository
+from app.services.bot import TelegramBotService
 from app.services.monitor import MonitorService
-from app.services.telegram import TelegramClient, format_new_tender
+from app.services.telegram import TelegramClient, format_new_tender, tender_inline_keyboard
 from app.utils.dates import now_tz
 from app.utils.http import HttpClient
 from app.utils.logging import configure_logging
@@ -63,9 +64,16 @@ async def cmd_resend(args) -> None:
         tender = session.get(Tender, args.tender_id)
         if tender is None:
             raise SystemExit(f"Tender not found: {args.tender_id}")
-        await client.send_text(format_new_tender(tender, now))
+        await client.send_text(format_new_tender(tender, now), reply_markup=tender_inline_keyboard(tender))
         repo.mark_sent(tender, "resend", settings.telegram_chat_id, "sent")
     print(f"Resent tender {args.tender_id}")
+
+
+async def cmd_poll(args) -> None:
+    settings = get_settings()
+    session_factory = init_db(settings)
+    service = TelegramBotService(settings, session_factory)
+    await service.poll_forever()
 
 
 def cmd_report(args) -> None:
@@ -98,6 +106,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     report = sub.add_parser("report")
     report.add_argument("--limit", type=int, default=20)
     sub.add_parser("cleanup")
+    sub.add_parser("poll")
     return parser
 
 
@@ -117,6 +126,8 @@ def main() -> None:
         cmd_report(args)
     elif args.command == "cleanup":
         cmd_cleanup(args)
+    elif args.command == "poll":
+        asyncio.run(cmd_poll(args))
 
 
 if __name__ == "__main__":

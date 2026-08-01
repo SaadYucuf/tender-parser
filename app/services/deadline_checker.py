@@ -11,6 +11,7 @@ CLOSED_STATUSES = ("closed", "cancel", "awarded", "completed", "archive", "за�
 
 class DeadlineChecker:
     def is_active_record(self, deadline: datetime | None, status: str | None, now: datetime) -> bool:
+        deadline = self._align_tz(deadline, now)
         if deadline is not None and deadline <= now:
             return False
         normalized = (status or "").lower()
@@ -19,12 +20,14 @@ class DeadlineChecker:
         return True
 
     def reminder_due(self, tender: Tender, now: datetime, days: int) -> bool:
-        if tender.deadline is None or tender.deadline <= now:
+        deadline = self._align_tz(tender.deadline, now)
+        if deadline is None or deadline <= now:
             return False
-        remaining = tender.deadline - now
+        remaining = deadline - now
         return 0 <= remaining.total_seconds() <= days * 86400
 
     def remaining_text(self, deadline: datetime | None, now: datetime) -> str:
+        deadline = self._align_tz(deadline, now)
         if deadline is None:
             return "Noma'lum"
         delta = deadline - now
@@ -35,3 +38,10 @@ class DeadlineChecker:
         if days:
             return f"{days} kun {hours} soat"
         return f"{hours} soat"
+
+    def _align_tz(self, value: datetime | None, now: datetime) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None and now.tzinfo is not None:
+            return value.replace(tzinfo=now.tzinfo)
+        return value

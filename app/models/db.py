@@ -44,6 +44,7 @@ class Tender(Base):
 
     sources: Mapped[list["TenderSource"]] = relationship(back_populates="tender", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship(back_populates="tender", cascade="all, delete-orphan")
+    user_actions: Mapped[list["UserAction"]] = relationship(back_populates="tender", cascade="all, delete-orphan")
 
 
 class TenderSource(Base):
@@ -86,3 +87,17 @@ class SourceRun(Base):
     duplicate_records: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(50), default="running")
     error_message: Mapped[str | None] = mapped_column(Text)
+
+
+class UserAction(Base):
+    __tablename__ = "user_actions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), index=True)
+    chat_id: Mapped[str] = mapped_column(String(255), index=True)
+    tender_id: Mapped[int | None] = mapped_column(ForeignKey("tenders.id"), nullable=True, index=True)
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    value: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tender: Mapped[Tender | None] = relationship(back_populates="user_actions")

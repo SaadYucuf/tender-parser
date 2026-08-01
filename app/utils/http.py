@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections.abc import Mapping
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+
+def safe_url(url: str) -> str:
+    return re.sub(r"(api\.telegram\.org/bot)[^/]+", r"\1<redacted>", url)
 
 
 class HttpClient:
@@ -26,12 +31,12 @@ class HttpClient:
                     return response.text
                 except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
                     last_error = exc
-                    logger.warning("HTTP GET failed", extra={"url": url, "attempt": attempt, "error": str(exc)})
+                    logger.warning("HTTP GET failed", extra={"url": safe_url(url), "attempt": attempt, "error": str(exc)})
                     if attempt < self.retries:
                         await asyncio.sleep(self.backoff * attempt)
-        raise RuntimeError(f"GET failed for {url}: {last_error}")
+        raise RuntimeError(f"GET failed for {safe_url(url)}: {last_error}")
 
-    async def post_json(self, url: str, data: Mapping[str, object]) -> dict[str, object]:
+    async def post_json(self, url: str, data: Mapping[str, object]) -> object:
         last_error: Exception | None = None
         async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
             for attempt in range(1, self.retries + 1):
@@ -41,7 +46,15 @@ class HttpClient:
                     return response.json()
                 except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
                     last_error = exc
-                    logger.warning("HTTP POST failed", extra={"url": url, "attempt": attempt, "error": str(exc)})
+                    error = _safe_error(exc)
+                    logger.warning("HTTP POST failed", extra={"url": safe_url(url), "attempt": attempt, "error": error})
                     if attempt < self.retries:
                         await asyncio.sleep(self.backoff * attempt)
-        raise RuntimeError(f"POST failed for {url}: {last_error}")
+        raise RuntimeError(f"POST failed for {safe_url(url)}: {_safe_error(last_error)}")
+
+
+def _safe_error(error: Exception | None) -> str:
+    if error is None:
+        return "unknown error"
+    text = str(error)
+    return safe_url(text)

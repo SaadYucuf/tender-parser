@@ -17,7 +17,10 @@ def parse_datetime(value: str | None, tz_name: str = "Asia/Tashkent") -> datetim
     if not text:
         return None
     try:
-        parsed = date_parser.parse(text, dayfirst=True, fuzzy=True)
+        if len(text) >= 10 and text[4] == "-" and text[7] == "-":
+            parsed = date_parser.isoparse(text)
+        else:
+            parsed = date_parser.parse(text, dayfirst=True, fuzzy=True)
     except (ValueError, OverflowError):
         return None
     if parsed.tzinfo is None:

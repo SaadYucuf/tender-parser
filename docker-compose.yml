@@ -6,3 +6,11 @@ services:
     volumes:
       - ./data:/app/data
     restart: "no"
+  medtender-bot:
+    build: .
+    command: ["python", "-m", "app.main", "poll"]
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from datetime import datetime
 
 from app.models.schemas import TenderRecord
 
@@ -36,7 +37,7 @@ class Deduplicator:
                 record.lot_number,
                 record.customer,
                 record.title,
-                record.deadline.isoformat() if record.deadline else None,
+                self._datetime_key(record.deadline) if record.deadline else None,
                 str(record.amount) if record.amount is not None else None,
             ]
             if part
@@ -51,10 +52,13 @@ class Deduplicator:
             value = getattr(record, field)
             if isinstance(value, list):
                 value = "|".join(value)
-            elif hasattr(value, "isoformat"):
-                value = value.isoformat()
+            elif isinstance(value, datetime):
+                value = self._datetime_key(value)
             payload.append(self._norm(str(value or "")))
         return hashlib.sha256("\n".join(payload).encode("utf-8")).hexdigest()
 
     def _norm(self, value: str) -> str:
         return re.sub(r"\s+", " ", value.lower()).strip()
+
+    def _datetime_key(self, value: datetime) -> str:
+        return value.replace(tzinfo=None).isoformat(timespec="seconds")

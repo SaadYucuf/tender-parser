@@ -1,19 +1,20 @@
 [Unit]
-Description=MedTender AI Agent one-shot monitoring run
+Description=MedTender AI Agent Telegram bot polling
 Wants=network-online.target
 After=network-online.target
 
 [Service]
-Type=oneshot
+Type=simple
 User=medtender
 Group=medtender
 WorkingDirectory=/opt/medtender-agent
 EnvironmentFile=/opt/medtender-agent/.env
-ExecStart=/opt/medtender-agent/.venv/bin/python -m app.main run
+ExecStart=/opt/medtender-agent/.venv/bin/python -m app.main poll
+Restart=always
+RestartSec=5
 Nice=5
-CPUQuota=50%
-MemoryMax=512M
-TimeoutStartSec=20min
+CPUQuota=25%
+MemoryMax=256M
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full

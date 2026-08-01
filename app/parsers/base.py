@@ -32,6 +32,28 @@ class ParseStats:
 
 class SourceParser(abc.ABC):
     source_name: str
+    base_url: str
+
+    async def health_check(self, client: HttpClient) -> bool:
+        try:
+            await client.get_text(self.base_url)
+            return True
+        except Exception:
+            return False
+
+    async def fetch_active_tenders(self, client: HttpClient) -> list[TenderRecord]:
+        return await self.fetch(client)
+
+    async def fetch_tender_details(self, tender_url: str, client: HttpClient) -> str:
+        return await client.get_text(tender_url)
+
+    async def normalize(self, raw_tender) -> TenderRecord:
+        if isinstance(raw_tender, TenderRecord):
+            return raw_tender
+        raise TypeError("normalize expects a TenderRecord unless overridden by parser")
+
+    async def validate_deadline(self, tender: TenderRecord) -> bool:
+        return tender.deadline is not None
 
     @abc.abstractmethod
     async def fetch(self, client: HttpClient) -> list[TenderRecord]:
@@ -43,19 +65,24 @@ class GenericSearchParser(SourceParser):
     endpoints: list[SearchEndpoint]
     country_filter: str | None = None
     max_keywords: int = 18
+    direct_pages_only: bool = False
+    max_endpoint_failures: int = 2
 
     async def fetch(self, client: HttpClient) -> list[TenderRecord]:
         records: list[TenderRecord] = []
         seen_urls: set[str] = set()
-        for endpoint in self.endpoints:
-            for keyword in self.keywords():
-                params = dict(endpoint.extra_params or {})
-                params[endpoint.query_param] = keyword
-                url = self._url_with_params(endpoint.url, params)
+        attempted = 0
+        successful_pages = 0
+        failures = 0
+        if self.direct_pages_only:
+            for endpoint in self.endpoints:
+                attempted += 1
                 try:
-                    html = await client.get_text(endpoint.url, params=params)
+                    html = await client.get_text(endpoint.url)
+                    successful_pages += 1
                 except Exception as exc:
-                    logger.warning("source fetch failed", extra={"source": self.source_name, "url": url, "error": str(exc)})
+                    failures += 1
+                    logger.warning("source fetch failed", extra={"source": self.source_name, "url": endpoint.url, "error": str(exc)})
                     continue
                 for record in self.parse_html(html, page_url=endpoint.url):
                     if self.country_filter and self.country_filter.lower() not in (record.raw_text or record.title).lower():
@@ -64,6 +91,40 @@ class GenericSearchParser(SourceParser):
                         continue
                     seen_urls.add(str(record.source_url))
                     records.append(record)
+            if attempted and successful_pages == 0 and failures:
+                raise RuntimeError(f"all requests failed for {self.source_name}")
+            return records
+        for endpoint in self.endpoints:
+            endpoint_failures = 0
+            for keyword in self.keywords():
+                params = dict(endpoint.extra_params or {})
+                params[endpoint.query_param] = keyword
+                url = self._url_with_params(endpoint.url, params)
+                attempted += 1
+                try:
+                    html = await client.get_text(endpoint.url, params=params)
+                    successful_pages += 1
+                    endpoint_failures = 0
+                except Exception as exc:
+                    failures += 1
+                    endpoint_failures += 1
+                    logger.warning("source fetch failed", extra={"source": self.source_name, "url": url, "error": str(exc)})
+                    if endpoint_failures >= self.max_endpoint_failures:
+                        logger.warning(
+                            "endpoint skipped after repeated failures",
+                            extra={"source": self.source_name, "url": endpoint.url, "failures": endpoint_failures},
+                        )
+                        break
+                    continue
+                for record in self.parse_html(html, page_url=endpoint.url):
+                    if self.country_filter and self.country_filter.lower() not in (record.raw_text or record.title).lower():
+                        continue
+                    if str(record.source_url) in seen_urls:
+                        continue
+                    seen_urls.add(str(record.source_url))
+                    records.append(record)
+        if attempted and successful_pages == 0 and failures:
+            raise RuntimeError(f"all requests failed for {self.source_name}")
         return records
 
     def keywords(self) -> list[str]:

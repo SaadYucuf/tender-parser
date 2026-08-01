@@ -15,10 +15,13 @@ class Settings(BaseSettings):
     environment: Literal["dev", "prod", "test"] = "dev"
     tz: str = Field(default="Asia/Tashkent", alias="TZ")
     database_url: str = "sqlite:///./data/medtender.sqlite3"
+    sources_config_path: str = "config/sources.yaml"
+    monitoring_pause_file: str = "data/paused"
     log_level: str = "INFO"
 
     telegram_bot_token: str | None = Field(default=None, alias="TELEGRAM_BOT_TOKEN")
     telegram_chat_id: str | None = Field(default=None, alias="TELEGRAM_CHAT_ID")
+    telegram_admin_ids: str | None = Field(default=None, alias="TELEGRAM_ADMIN_IDS")
     telegram_thread_id: int | None = Field(default=None, alias="TELEGRAM_THREAD_ID")
     telegram_parse_mode: str = "MarkdownV2"
 
@@ -45,6 +48,13 @@ class Settings(BaseSettings):
         if value == "":
             return None
         return value
+
+    @property
+    def admin_chat_ids(self) -> set[str]:
+        values = {self.telegram_chat_id} if self.telegram_chat_id else set()
+        if self.telegram_admin_ids:
+            values.update(part.strip() for part in self.telegram_admin_ids.split(",") if part.strip())
+        return values
 
 
 @lru_cache
